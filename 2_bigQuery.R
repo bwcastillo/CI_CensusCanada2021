@@ -1,4 +1,22 @@
-"CREATE TABLE census2021_ci (id SERIAL PRIMARY KEY,
+library(RPostgreSQL)
+library(dplyr)
+library(tidyverse)
+library(DBI)
+
+# 1.Establishing connection -----------------------
+
+fun_connect<-function(){dbConnect(RPostgres::Postgres(),
+                                  dbname='censos',
+                                  host='localhost',
+                                  port=5432,
+                                  user='postgres',
+                                  password='adminpass',
+                                  options= '-c search_path=censos')}
+
+conn<-fun_connect()
+
+
+dbSendQuery(conn,"CREATE TABLE census2021_ci2 (id SERIAL PRIMARY KEY,
 CENSUS_YEAR VARCHAR(50),
 DGUID VARCHAR(100),
 ALT_GEO_CODE VARCHAR(100),
@@ -45,12 +63,12 @@ SYMBOL16 VARCHAR(10),
 \"C17_RATE_HI_CI_MEN+\" VARCHAR(50),
 SYMBOL17 VARCHAR(10),
 \"C18_RATE_HI_CI_WOMEN+\" VARCHAR(50),
-SYMBOL18 VARCHAR(10))"
+SYMBOL18 VARCHAR(10))")
 
 
 # Loading data ------------------------------------------------------------
-
-"copy censos.census2021_ci (CENSUS_YEAR,
+dbSendQuery(conn,"copy censos.census2021_ci2 (
+CENSUS_YEAR,
 DGUID,
 ALT_GEO_CODE,
 GEO_LEVEL,
@@ -97,4 +115,4 @@ SYMBOL16,
 SYMBOL17,
 \"C18_RATE_HI_CI_WOMEN+\",
 SYMBOL18) 
-FROM PROGRAM '7z e -so C:/CEDEUS/2022/dec01_bbddSina_KasraPaper/input/98-401-X2021006CI_eng_CSV/csv_ddbb/merged-csv-files.csv' DELIMITER ',' CSV HEADER encoding 'windows-1251';"
+FROM PROGRAM '7z e -so C:/CEDEUS/2022/dec01_bbddSina_KasraPaper/input/98-401-X2021006CI_eng_CSV/csv_ddbb/merged-csv-files.csv' DELIMITER ',' CSV HEADER encoding 'windows-1251';")

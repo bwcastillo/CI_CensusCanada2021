@@ -163,8 +163,25 @@ nrow_query[4]
 nrow_query[5]
 nrow_query[6]
 
-dbSendQuery(conn, paste("CREATE TABLE census2021_ci
-                        AS",
+
+b<-c()
+for (i in 1:length(nrow_query)){
+  a<-nrow_query[[i]]$count
+  b[[i]]<-a
+}
+
+sapply(nrow_query, function(x){(x)})
+
+options(scipen=999)
+sum(b)
+
+
+
+# Creating table united ---------------------------------------------------
+
+#dbSendQuery(conn, "DROP TABLE censos.census2021_ci")
+
+dbSendQuery(conn, paste("CREATE TABLE census2021_ci AS",
                   paste0("SELECT * FROM censos.",provinces[1]),
                   "UNION ALL",
                   paste0("SELECT * FROM censos.",provinces[2]),  
@@ -175,9 +192,37 @@ dbSendQuery(conn, paste("CREATE TABLE census2021_ci
                   "UNION ALL",
                   paste0("SELECT * FROM censos.",provinces[5]),
                   "UNION ALL",
-                  paste0("SELECT * FROM censos.",provinces[6]),
-                  "ORDER BY id;")) #102976216 rows
-
+                  paste0("SELECT * FROM censos.",provinces[6]))) 
 
 query<-dbSendQuery(conn, "SELECT count(*) FROM censos.census2021_ci")
-nrow_query[[i]]<-dbFetch(query)
+nrow_bigddbb<-dbFetch(query)
+
+dbSendQuery(conn, "ALTER TABLE censos.census2021_ci
+            ADD COLUMN id2 SERIAL PRIMARY KEY;")
+
+
+q1<-dbSendQuery(conn, "SELECT id2 FROM censos.census2021_ci")
+q1<-dbFetch(q1)
+
+tail(q1, 10)
+# Trying to add identifier ------------------------------------------------
+
+dbSendQuery(conn, paste("CREATE TABLE census2021_ci AS
+                        SELECT row_number() OVER (ORDER BY id) AS id_2 FROM (",
+                        paste0("SELECT * FROM censos.",provinces[1]),
+                        "UNION ALL",
+                        paste0("SELECT * FROM censos.",provinces[2]),  
+                        "UNION ALL",
+                        paste0("SELECT * FROM censos.",provinces[3]),
+                        "UNION ALL",
+                        paste0("SELECT * FROM censos.",provinces[4]),
+                        "UNION ALL",
+                        paste0("SELECT * FROM censos.",provinces[5]),
+                        "UNION ALL",
+                        paste0("SELECT * FROM censos.",provinces[6]),") AS foo")) 
+
+q2<-dbSendQuery(conn, "SELECT id_2 FROM censos.census2021_ci")
+q2<-dbFetch(q2)
+
+tail(q1, 10)
+gc()
