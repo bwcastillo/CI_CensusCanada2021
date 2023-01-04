@@ -1,5 +1,5 @@
 
-# Old method --------------------------------------------------------------
+# Knowing rows  -----------------------------------------------------------
 
 
 #Values position variable of interest
@@ -15,6 +15,10 @@ georows<-georows[order(georows$Line.Number),]
 #geocode<-lapply(georows, function(x){x[nchar(as.character(x$Geo.Code))>7,]}) %>% bind_rows()
 
 #https://stackoverflow.com/questions/7060272/split-up-a-dataframe-by-number-of-rows
+
+
+
+# Old method --------------------------------------------------------------
 
 #Expanding the index creating sums among each of the index plus the 16 variables
 test<-split.data.frame(georows,georows$Line.Number) %>% 
@@ -33,14 +37,12 @@ bigIndex #Is a Index created with the 1624 variables with ID's from 165 to 2623,
 bigIndex_of<-data.frame(id=1:length(bigIndex),iddb=bigIndex)
 
 index<-bigIndex_of[bigIndex_of$iddb%in%index,]
- 
-# test<-split.data.frame(georows,data.frame(id=1:nrow(georows),georows)$id) %>% 
-#   map(.,~as.data.frame(.$Line.Number+index$id)-2)
 
+#Testing the index for the old method  
 test<-split.data.frame(georows,data.frame(id=1:nrow(georows),georows)$id) %>% 
   map(.,~as.data.frame(.$Line.Number+index$id)-2)
 
-test<-test %>% bind_rows(.)
+test<-test %>% bind_rows(.) #Disorder in the index position, is not sequencial
 
 # index+1624*1
 # index+1624*2
