@@ -58,7 +58,7 @@ test<-lapply(georows,function(x){
   vector<-c(index$id,2607,vector)
         vec <- Reduce(c,vector)})
 
-
+gc()
 dbQuery<-list()
 for(i in 1:6){
 a<-paste(paste0("SELECT * 
