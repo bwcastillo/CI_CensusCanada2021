@@ -1,4 +1,5 @@
-
+ctv::install.views("HighPerformanceComputing", coreOnly = T)
+install.packages("rgpu")
 # Knowing rows  -----------------------------------------------------------
 
 

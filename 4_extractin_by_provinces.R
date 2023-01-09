@@ -17,7 +17,6 @@ conn<-fun_connect()
 
 # 2. Knowing rows  -----------------------------------------------------------
 
-
 #Values position variable of interest
 index<-c(135,1416,1439,1441,1451,1467,1488,1536,1695,1976,1999,2226,2227,2607)#14
 
@@ -55,10 +54,12 @@ test<-lapply(georows,function(x){
           a<-index$id+1624*i
           vector[[i]]<-a
   }
-  vector<-c(index$id,2607,vector)
-        vec <- Reduce(c,vector)})
+  vector<-c(index$id,vector)
+  vec <- Reduce(c,vector)})
 
 gc()
+
+
 dbQuery<-list()
 for(i in 1:6){
 a<-paste(paste0("SELECT * 
@@ -70,14 +71,42 @@ dbQuery[[i]]<-a
 }
 
 
+
 q1<-dbSendQuery(conn, dbQuery[[1]])
 data_a<-dbFetch(q1)
+write.csv(data_a,paste0("output/1raw_datasets/",provinces[[1]],"-raw.csv"))
+rm(data_a,q1)          
+gc()
 
 q2<-dbSendQuery(conn, dbQuery[[2]])
 data_bc<-dbFetch(q2)
+write.csv(data_bc,paste0("output/1raw_datasets/",provinces[[2]],"-raw.csv"))
+rm(data_bc,q2)
+gc()
+
+
 
 q3<-dbSendQuery(conn, dbQuery[[3]])
+gc()
 data_on<-dbFetch(q3)
+
+# Ontario Case ------------------------------------------------------------
+
+#See if is working
+
+query_on<-paste(paste0("SELECT *
+          FROM censos.",provinces[[i]]),"
+         WHERE",paste('id IN (',
+                      paste(test[[3]][1:14], collapse=",")
+         ),") ORDER BY ID;")
+
+
+q3<-dbSendQuery(conn, query_on)
+
+data_on<-dbFetch(q3)
+
+# Others ------------------------------------------------------------------
+
 
 q4<-dbSendQuery(conn, dbQuery[[4]])
 data_pr<-dbFetch(q4)
