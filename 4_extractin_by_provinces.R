@@ -71,7 +71,6 @@ dbQuery[[i]]<-a
 }
 
 
-
 q1<-dbSendQuery(conn, dbQuery[[1]])
 data_a<-dbFetch(q1)
 write.csv(data_a,paste0("output/1raw_datasets/",provinces[[1]],"-raw.csv"))
@@ -86,9 +85,9 @@ gc()
 
 
 #Ontario bad guy:
-q3<-dbSendQuery(conn, dbQuery[[3]])
-gc()
-data_on<-dbFetch(q3)
+# q3<-dbSendQuery(conn, dbQuery[[3]])
+# gc()
+# data_on<-dbFetch(q3)
 
 # Ontario Case ------------------------------------------------------------
 
@@ -107,9 +106,7 @@ data_on<-dbFetch(q3)
 
 
 # Ontario through chunks ---------------------------------------------------------------
-
-
-#https://stackoverflow.com/questions/3318333/split-a-vector-into-chunks
+# https://stackoverflow.com/questions/3318333/split-a-vector-into-chunks
 # seq_along(test[[3]]) # It creates an index
 # ceiling(seq_along(test[[3]])/14) #It creates a chunk-group position across the index
 
@@ -121,7 +118,7 @@ index_on<-split(test[[3]],ceiling(seq_along(test[[3]])/14))
 chunks_on<-lapply(index_on,function(x){
 paste(paste0("SELECT *
           FROM censos.",provinces[[3]]),"
-         WHERE",paste('id IN (',
+          WHERE",paste('id IN (',
                       paste(x, collapse=",")
          ),") ORDER BY ID;")})
 
@@ -165,25 +162,20 @@ write.csv(q3,paste0("output/1raw_datasets/",provinces[[3]],"-raw.csv"))
 
 # Others ------------------------------------------------------------------
 
-q4<-dbSendQuery(conn, dbQuery[[4]])
-data_pr<-dbFetch(q4)
-write.csv(data_pr,paste0("output/1raw_datasets/",provinces[[4]],"-raw.csv"))
+# q4<-dbSendQuery(conn, dbQuery[[4]])
+# data_pr<-dbFetch(q4)
+# write.csv(data_pr,paste0("output/1raw_datasets/",provinces[[4]],"-raw.csv"))
 q4<-get_data_chunk(4,provinces[[4]])
 
-q5<-dbSendQuery(conn, dbQuery[[5]])
-data_qc<-dbFetch(q5)
-write.csv(data_qc,paste0("output/1raw_datasets/",provinces[[5]],"-raw.csv"))
+# q5<-dbSendQuery(conn, dbQuery[[5]])
+# data_qc<-dbFetch(q5)
+# write.csv(data_qc,paste0("output/1raw_datasets/",provinces[[5]],"-raw.csv"))
 q5<-get_data_chunk(5,provinces[[5]])
 
 
 q6<-dbSendQuery(conn, dbQuery[[6]])
 data_t<-dbFetch(q6)
 write.csv(data_t,paste0("output/1raw_datasets/",provinces[[6]],"-raw.csv"))
-
-#It doesn't work with apply functions
-# data<-lapply(dbQuery, function(x){dbSendQuery(conn,x)})
-# data<-lapply(data, function(x){dbFetch(x)})
-
 
 
 # Appendix: Function that make everything lol -----------------------------
@@ -217,7 +209,8 @@ get_data_chunk<-function(x,y){
   }
 
   # Extracting the part of the list of or interest 
-  query_2<-query_2[10001:length(index)-14] #nrow with the original nrow count
+  #query_2<-query_2[10001:length(index)-14] #nrow with the original nrow count
+  query_2<-query_2[10001:length(index)-1] #nrow with the original nrow count
 
   #bind rows 
   query<-bind_rows(query)
@@ -229,4 +222,10 @@ get_data_chunk<-function(x,y){
   write.csv(q,paste0("output/1raw_datasets/",y,"-raw.csv"))
 
   return(q)}
+
+
+
+#It doesn't work with apply functions
+# data<-lapply(dbQuery, function(x){dbSendQuery(conn,x)})
+# data<-lapply(data, function(x){dbFetch(x)})
 
