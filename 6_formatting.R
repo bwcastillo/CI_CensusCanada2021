@@ -1,5 +1,5 @@
 
-# Open the saved datasets -------------------------------------------------------
+# Veryfying the saved datasets -------------------------------------------------------
 library(replyr)
 lapply(provinces, function(x){replyr_nrow(tbl(conn, tolower(x)))/1624*14})
 
@@ -56,7 +56,12 @@ veryfier(q4)
 veryfier(q5)
 veryfier(data_t)
 
-dataset_ci <- rbind(data_a,data_bc,q3,q4,q5,data_t)
+dataset_ci <- rbind(data.frame(data_a,province="Atlantic"),
+                    data.frame(data_bc,province="British Columbia"),
+                    data.frame(q3,province="Ontario"),
+                    data.frame(q4,province="Praires"),
+                    data.frame(q5,province="Quebec"),
+                    data.frame(data_t,province="Territories"))
 
 veryfier(dataset_ci)
 
@@ -69,18 +74,20 @@ datascape <-  function(x){
   x<-x[,c(1:13,19,25)]
   x<-mutate_if(x, cols=c(13:15),is.character,as.numeric)
   x<-unnest(x[,13:15])  #Unnesting converted (char2num) cols
-  
+
   #Sticker
-  y<-y[,c(1:13,19,25)]
+  y<-y[,c(1:13,19,25,49)]
   y$variables<-rep(c("GOVTRANSFER","RENTER","CROWDHOME", "BUILT1960","REPAIRHOME",
                      "SHLTCOSTR","MEDHOMVAL","RECENTIMMIGRANT","VISMIN_NIE",
                      "MOVERS","NONDEGREE","UNEMPLOYED","NILF","PUBTRANSIT"), nrow(x)/14)
-  x<-data.frame(y[,c(2:6,16)],x) #Adding var to converted
-
-  colnames(x)[6:9] <- c("ID", "TOTAL", "LOW_CI", "HIGH_CI")
   
+    x<-data.frame(y[,c(2:6,16,17)],x) #Adding var to converted
+
+  colnames(x)[7:10] <- c("ID", "TOTAL", "LOW_CI", "HIGH_CI")
+  
+
   #Wider
-  x<-pivot_wider(x,names_from=ID,values_from=c(7:9)) #Expanding dataset
+  x<-pivot_wider(x,names_from=ID,values_from=c(8:10)) #Expanding dataset
   return(x)
 }
 
@@ -88,9 +95,55 @@ prueba <- datascape(dataset_ci)
 
 #Filtering just Dissemination area, is possible another scales
 da2021 <- prueba[prueba$geo_level=="Dissemination area",]
-da2021 <- prueba[unique(prueba$dguid),]
+#da2021 <- prueba[unique(prueba$dguid),]
 
-#boundaries21<-sf::st_read("C:\\CEDEUS\\2022\\oct03_census2021\\input\\boundaries_21DA\\lda_000b21a_e\\lda_000b21a_e.shp")
+boundaries21<-sf::st_read("C:\\CEDEUS\\2022\\oct03_census2021\\input\\boundaries_21DA\\lda_000b21a_e\\lda_000b21a_e.shp")
 #boundaries21 == 57932 rows
 
+
+da2021$dguid[!(da2021$dguid%in%unique(boundaries21$DGUID))]
 #rm(prueba,boundaries21, prueba2, da2021,dataset_ci)
+
+
+
+# Same function for rates -------------------------------------------------
+
+
+#3. Slicing , sticking, wider RATES
+
+datascape_rates <-  function(x){
+  #Slice
+  y <- x
+  x<-x[,c(1:12,31,37,43)]
+  x<-mutate_if(x, cols=c(13:15),is.character,as.numeric)
+  x<-unnest(x[,13:15])  #Unnesting converted (char2num) cols
+  
+  #Sticker
+  y<-y[,c(1:12,31,37,43,49)]
+  y$variables<-rep(c("GOVTRANSFER","RENTER","CROWDHOME", "BUILT1960","REPAIRHOME",
+                     "SHLTCOSTR","MEDHOMVAL","RECENTIMMIGRANT","VISMIN_NIE",
+                     "MOVERS","NONDEGREE","UNEMPLOYED","NILF","PUBTRANSIT"), nrow(x)/14)
+  
+  x<-data.frame(y[,c(2:6,16,17)],x) #Adding var to converted
+  
+  colnames(x)[7:10] <- c("ID", "TOTAL", "LOW_CI", "HIGH_CI")
+  
+  
+  #Wider
+  x<-pivot_wider(x,names_from=ID,values_from=c(8:10)) #Expanding dataset
+  return(x)
+}
+
+prueba_rate <- datascape_rates(dataset_ci)
+
+da2021_rate <- prueba_rate[prueba_rate$geo_level=="Dissemination area",]
+
+
+
+# Saving the datasets -----------------------------------------------------
+
+write.csv(da2021,"C:\\CEDEUS\\2022\\dec01_bbddSina_KasraPaper\\output\\3csv\\query21da_ci.csv")
+write.csv(da2021_rate,"C:\\CEDEUS\\2022\\dec01_bbddSina_KasraPaper\\output\\3csv\\query21da_cirate.csv")
+
+writexl::write_xlsx(da2021,"C:\\CEDEUS\\2022\\dec01_bbddSina_KasraPaper\\output\\2excel\\query21da_ci.xlsx")
+writexl::write_xlsx(da2021_rate,"C:\\CEDEUS\\2022\\dec01_bbddSina_KasraPaper\\output\\2excel\\query21da_cirate.xlsx")
