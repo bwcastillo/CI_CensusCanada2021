@@ -147,3 +147,29 @@ write.csv(da2021_rate,"C:\\CEDEUS\\2022\\dec01_bbddSina_KasraPaper\\output\\3csv
 
 writexl::write_xlsx(da2021,"C:\\CEDEUS\\2022\\dec01_bbddSina_KasraPaper\\output\\2excel\\query21da_ci.xlsx")
 writexl::write_xlsx(da2021_rate,"C:\\CEDEUS\\2022\\dec01_bbddSina_KasraPaper\\output\\2excel\\query21da_cirate.xlsx")
+
+
+
+
+# Adding variables from regular dataset -----------------------------------
+
+
+
+# Selecting for Kasra and Sina CI paper -----------------------------------
+# 
+# query21da_ks <- read.csv("C:/CEDEUS/2023/jan02_LitonCensus_var/output/formated/csv/query21da_form.csv")
+# 
+# colnames(query21da_ks)[2:12]
+# 
+# c("TOTPOP","TOTDWELL","POPDENSITY","BELOW15","SENIOR","FEMALE","ONEPERSONHH",
+#   "NOLANG","LOWINCOME","LOWINCSENIOR","LONEPARENT","MEDHHINC","APT5STORY")
+# 
+# 
+# query21da_ks <- query21da_ks[,c(colnames(query21da_ks)[2:12],"TOTPOP","TOTDWELL","POPDENSITY","BELOW15","SENIOR","FEMALE","ONEPERSONHH",
+#                "NOLANG","LOWINCOME","LOWINCSENIOR","LONEPARENT","MEDHHINC","APT5STORY")]
+# 
+# 
+# write.csv(query21da_ks,"C:\\CEDEUS\\2022\\dec01_bbddSina_KasraPaper\\output\\3csv\\query21da_100.csv")
+# writexl::write_xlsx(query21da_ks,"C:\\CEDEUS\\2022\\dec01_bbddSina_KasraPaper\\output\\2excel\\query21da_100.xlsx")
+
+

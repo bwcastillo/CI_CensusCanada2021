@@ -16,11 +16,11 @@ fun_connect<-function(){dbConnect(RPostgres::Postgres(),
 conn<-fun_connect()
 
 # 2.Getting names ----------------
-file_name<-dir("C:/CEDEUS/2022/dec01_bbddSina_KasraPaper/input/98-401-X2021006CI_eng_CSV/csv_ddbb")[1:6]
+file_name<-dir(paste0(here::here(),"/input/98-401-X2021006CI_eng_CSV/csv_ddbb")[1:6])
 provinces<-sub(".*data_", "", file_name)
 provinces<-sub(".7z*", "", provinces) 
-# 3.Creating tables ---------------------------------------------------------
 
+# 3.Creating tables ---------------------------------------------------------
 
 create_table<-lapply(provinces,function(x){paste0("CREATE TABLE ",x," (id SERIAL PRIMARY KEY,
 CENSUS_YEAR VARCHAR(50),
@@ -89,53 +89,53 @@ provinces_file<-data.frame(file=file_name,provinces=provinces)
 load_data<-list()
 for (i in 1:nrow(provinces_file)){
 b<-paste0("copy censos.",provinces_file$provinces[i] ," (CENSUS_YEAR,
-DGUID,
-ALT_GEO_CODE,
-GEO_LEVEL,
-GEO_NAME,
-TNR_SF,
-TNR_LF,
-DATA_QUALITY_FLAG,
-CHARACTERISTIC_ID,
-CHARACTERISTIC_NAME,
-CHARACTERISTIC_NOTE,
-C1_COUNT_TOTAL,
-SYMBOL1,
-\"C2_COUNT_MEN+\",
-SYMBOL2,
-\"C3_COUNT_WOMEN+\",
-SYMBOL3,
-C4_COUNT_LOW_CI_TOTAL,
-SYMBOL4,
-\"C5_COUNT_LOW_CI_MEN+\",
-SYMBOL5,
-\"C6_COUNT_LOW_CI_WOMEN+\",
-SYMBOL6,
-C7_COUNT_HI_CI_TOTAL,
-SYMBOL7,
-\"C8_COUNT_HI_CI_MEN+\",
-SYMBOL8,
-\"C9_COUNT_HI_CI_WOMEN+\",
-SYMBOL9,
-C10_RATE_TOTAL,
-SYMBOL10,
-\"C11_RATE_MEN+\",
-SYMBOL11,
-\"C12_RATE_WOMEN+\",
-SYMBOL12,
-C13_RATE_LOW_CI_TOTAL,
-SYMBOL13,
-\"C14_RATE_LOW_CI_MEN+\",
-SYMBOL14,
-\"C15_RATE_LOW_CI_WOMEN+\",
-SYMBOL15,
-C16_RATE_HI_CI_TOTAL,
-SYMBOL16,
-\"C17_RATE_HI_CI_MEN+\",
-SYMBOL17,
-\"C18_RATE_HI_CI_WOMEN+\",
-SYMBOL18) 
-FROM PROGRAM '7z e -so C:/CEDEUS/2022/dec01_bbddSina_KasraPaper/input/98-401-X2021006CI_eng_CSV/csv_ddbb/",provinces_file$file[i],"' DELIMITER ',' CSV HEADER encoding 'windows-1251';")
+          DGUID,
+          ALT_GEO_CODE,
+          GEO_LEVEL,
+          GEO_NAME,
+          TNR_SF,
+          TNR_LF,
+          DATA_QUALITY_FLAG,
+          CHARACTERISTIC_ID,
+          CHARACTERISTIC_NAME,
+          CHARACTERISTIC_NOTE,
+          C1_COUNT_TOTAL,
+          SYMBOL1,
+          \"C2_COUNT_MEN+\",
+          SYMBOL2,
+          \"C3_COUNT_WOMEN+\",
+          SYMBOL3,
+          C4_COUNT_LOW_CI_TOTAL,
+          SYMBOL4,
+          \"C5_COUNT_LOW_CI_MEN+\",
+          SYMBOL5,
+          \"C6_COUNT_LOW_CI_WOMEN+\",
+          SYMBOL6,
+          C7_COUNT_HI_CI_TOTAL,
+          SYMBOL7,
+          \"C8_COUNT_HI_CI_MEN+\",
+          SYMBOL8,
+          \"C9_COUNT_HI_CI_WOMEN+\",
+          SYMBOL9,
+          C10_RATE_TOTAL,
+          SYMBOL10,
+          \"C11_RATE_MEN+\",
+          SYMBOL11,
+          \"C12_RATE_WOMEN+\",
+          SYMBOL12,
+          C13_RATE_LOW_CI_TOTAL,
+          SYMBOL13,
+          \"C14_RATE_LOW_CI_MEN+\",
+          SYMBOL14,
+          \"C15_RATE_LOW_CI_WOMEN+\",
+          SYMBOL15,
+          C16_RATE_HI_CI_TOTAL,
+          SYMBOL16,
+          \"C17_RATE_HI_CI_MEN+\",
+          SYMBOL17,
+          \"C18_RATE_HI_CI_WOMEN+\",
+          SYMBOL18) 
+          FROM PROGRAM '7z e -so C:/CEDEUS/2022/dec01_bbddSina_KasraPaper/input/98-401-X2021006CI_eng_CSV/csv_ddbb/",provinces_file$file[i],"' DELIMITER ',' CSV HEADER encoding 'windows-1251';")
 load_data[[i]]<-b
 }
 
@@ -205,6 +205,7 @@ q1<-dbSendQuery(conn, "SELECT id2 FROM censos.census2021_ci")
 q1<-dbFetch(q1)
 
 tail(q1, 10)
+
 # Trying to add identifier ------------------------------------------------
 
 dbSendQuery(conn, paste("CREATE TABLE census2021_ci AS
@@ -226,3 +227,4 @@ q2<-dbFetch(q2)
 
 tail(q1, 10)
 gc()
+#possible posible 
