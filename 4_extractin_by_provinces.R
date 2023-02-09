@@ -1,3 +1,6 @@
+
+# Executing the before test in a big scale --------------------------------
+
 library(RPostgreSQL)
 library(dplyr)
 library(tidyverse)
@@ -28,7 +31,11 @@ georows<-lapply(names_georow, function(x){read.csv(paste0(here::here(),"/input/9
 
 # Creating Index position -------------------------------------------------
 
-bigIndex #Is a Index created with the 1624 variables with ID's from 165 to 2623, stored in input/bigIndex.xlsx, worked in the final script
+bigIndex<- dbSendQuery(conn, "SELECT id, characteristic_id FROM  censos.atlantic ORDER BY ID")
+bigIndex<- dbFetch(bigIndex) #
+bigIndex$characteristic_id <- as.numeric(bigIndex$characteristic_id)
+
+bigIndex <- bigIndex[1:1624,]
 
 bigIndex_of<-data.frame(id=1:length(bigIndex),iddb=bigIndex)
 
@@ -48,7 +55,7 @@ vec <- Reduce(c,vector)
 
 
 #Case for each data table
-test<-lapply(georows,function(x){
+da_position<-lapply(georows,function(x){
   vector <-c() 
   for (i in 1:nrow(x)){ 
           a<-index$id+1624*i
@@ -65,7 +72,7 @@ for(i in 1:6){
 a<-paste(paste0("SELECT * 
           FROM censos.",provinces[[i]]),"
          WHERE",paste('id IN (',
-          paste(test[[i]], collapse=",")
+          paste(da_position[[i]], collapse=",")
                  ),") ORDER BY ID;")
 dbQuery[[i]]<-a
 }
@@ -96,7 +103,7 @@ gc()
 query_on<-paste(paste0("SELECT *
           FROM censos.",provinces[[i]]),"
          WHERE",paste('id IN (',
-                      paste(test[[3]][1:14], collapse=",")
+                      paste(da_position[[3]][1:14], collapse=",")
          ),") ORDER BY ID;")
 
 
@@ -107,11 +114,11 @@ data_on<-dbFetch(q3)
 
 # Ontario through chunks ---------------------------------------------------------------
 # https://stackoverflow.com/questions/3318333/split-a-vector-into-chunks
-# seq_along(test[[3]]) # It creates an index
-# ceiling(seq_along(test[[3]])/14) #It creates a chunk-group position across the index
+# seq_along(da_position[[3]]) # It creates an index
+# ceiling(seq_along(da_position[[3]])/14) #It creates a chunk-group position across the index
 
 # Doing chunks Ontario ------------------------------------------------------------
-index_on<-split(test[[3]],ceiling(seq_along(test[[3]])/14))
+index_on<-split(da_position[[3]],ceiling(seq_along(da_position[[3]])/14))
 
 
 # Creating queries by each chunk ------------------------------------------
@@ -154,7 +161,7 @@ q3<-rbind(query_on,query_on2)
 
 # Veryifing same length ---------------------------------------------------
 nrow(georows[[3]])*14==nrow(q3) #Same length 
-length(test[[3]])-14==nrow(q3)  #Same length - remain that test list index was summed by the initial 14 variables 
+length(da_position[[3]])-14==nrow(q3)  #Same length - remain that test list index was summed by the initial 14 variables 
 
 # write.csv(query_on,paste0("output/1raw_datasets/",provinces[[3]],"1-raw.csv"))
 # write.csv(query_on2,paste0("output/1raw_datasets/",provinces[[3]],"2-raw.csv"))
@@ -181,7 +188,7 @@ write.csv(data_t,paste0("output/1raw_datasets/",provinces[[6]],"-raw.csv"))
 # Appendix: Function that make everything lol -----------------------------
 get_data_chunk<-function(x,y){
   # Doing chunks 
-  index<-split(test[[x]],ceiling(seq_along(test[[x]])/14))
+  index<-split(da_position[[x]],ceiling(seq_along(da_position[[x]])/14))
 
 
   # Creating queries by each chunk 
