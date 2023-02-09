@@ -199,7 +199,44 @@ Is possible to see how to join the tables and when I tried to exctract informati
 
 ### Part2: Exctracting data
 
-#Creating a weird index
+#### Creating a weird index
 
-It was necessary to build a weird index, but... what it means? It is a weird index because to exctract the variables in each database is necessary reference to its id and name description. The problem is that these identifiers are not ordered, if you realize the variables in the file `98-401-X2021006CI_English_meta.txt` the 1624 variables are nummered from 126 to 2623... ok, what is the problem with this? If you sustract 126 to 2623 is equal to 2497, damn. So what I did, just I copied the number descriptor of the variables in the files mentioned before in an excel file and I added a comma, in that way I could exctract them in the database. 
+It was necessary to build a weird index, but... what it means? It is a weird index because to exctract the variables in each database is necessary reference to its id (*SERIAL PRIMARY KEY*) and name description. The problem is that these identifiers are not ordered, if you realize the variables in the file `98-401-X2021006CI_English_meta.txt` the 1624 variables are nummered from 126 to 2623... ok, what is the problem with this? If you sustract 126 to 2623 is equal to 2497, damn! So what it was done, was copied the number descriptor of the variables in the files mentioned before in an excel file and I added a comma, in that way I could exctract them in the database. So once we get this original index it means from 126 to 2623 and we add a column with the index from 1 to 1624 beside the original one, so in that way we could know what is the original number of each variable. People can say that is better to select the original Id, identify where are the breaks and create and index from there, or maybe query for the name of the variable, but those are another alternatives to explore.  
 
+#### Subseting the index
+
+We just indetified 14 variables of interest
+
+|N°| N° Index Original  | N° Index Database (PostgreSQL) |  Variable Description| 
+|:------------- |:-------------:|:-------------:| :-----:|
+|1| 135 | 10 |**Number of government transfers recipients aged 15 years and over in private households in 2020 - 25% sample data** |
+|2| 1416 | 417|Total - Private households by tenure - 25% sample data (50) - **Renter**|
+|3| 1439 | 440|Total - Private households by housing suitability - 25% sample data (55) - <br> **Not suitable**|
+|4| 1441 | 442|Total - Occupied private dwellings by period of construction - 25% sample data (56) - <br>**1960 or before**|
+|5| 1451 | 452|Total - Occupied private dwellings by dwelling condition - 25% sample data (58) - <br>**Major repairs needed**|
+|6| 1467 | 468|Total - Owner and tenant households with household total income greater than zero, in non-farm, non-reserve private dwellings by shelter-cost-to-income ratio - 25% sample data (61) -<br> **Spending 30% or more of income on shelter costs**|
+|7| 1488 | 489|Total - Owner households in non-farm, non-reserve private dwellings - 25% sample data (66) -<br> **Median value of dwellings ($)** |
+|8| 1536 | 537|Total - Immigrant status and period of immigration for the population in private households -<br> **25% sample data (79) - 2016 to 2021** |
+|9| 1695 | 696|Total - Visible minority for the population in private households - 25% sample data (117) -<br>  **Multiple visible minorities**|
+|10| 1976 | 977|Total - Mobility status 1 year ago - 25% sample data (163) -<br> **Movers**|
+|11| 1999 | 1000|Total - Highest certificate, diploma or degree for the population aged 15 years and over in private households - 25% sample data (165) -<br> **No certificate, diploma or degree**|
+|12| 2226 | 1227|Total - Population aged 15 years and over by labour force status - 25% sample data (184) -<br> **Unemployed**|
+|13| 2227 | 1228|Total - Population aged 15 years and over by labour force status - 25% sample data (184) -<br> **Not in the labour force**|
+|14| 2607 | 1608|Total - Main mode of commuting for the employed labour force aged 15 years and over with a usual place of work or no fixed workplace address - 25% sample data (200) -<br> **Public transit**|
+
+
+#### Creating an index 
+
+```
+bigIndex #Is a Index created with the 1624 variables with ID's from 165 to 2623, stored in input/bigIndex.xlsx, worked in the final script
+
+bigIndex_of<-data.frame(id=1:length(bigIndex),iddb=bigIndex)
+
+index<-bigIndex_of[bigIndex_of$iddb%in%index,]
+
+#Testing the index for the old method  
+test<-split.data.frame(georows,data.frame(id=1:nrow(georows),georows)$id) %>% 
+  map(.,~as.data.frame(.$Line.Number+index$id)-2)
+
+test<-test %>% bind_rows(.) #Disorder in the index position, is not sequencial
+```
