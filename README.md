@@ -224,19 +224,45 @@ We just indetified 14 variables of interest
 |13| 2227 | 1228|Total - Population aged 15 years and over by labour force status - 25% sample data (184) -<br> **Not in the labour force**|
 |14| 2607 | 1608|Total - Main mode of commuting for the employed labour force aged 15 years and over with a usual place of work or no fixed workplace address - 25% sample data (200) -<br> **Public transit**|
 
+#### Obtaining the Dissemination Areas 
+The dataset not include just the Dissemination Areas if not another types of aggregations. So with the file that cointains the positions of each geographic area with extract the Dissemination Areas. 
+```
+
+names_georow<-dir(paste0(here::here(),"/input/98-401-X2021006CI_eng_CSV"))[2:7]
+
+georows<-lapply(names_georow, function(x){read.csv(paste0(here::here(),"/input/98-401-X2021006CI_eng_CSV/",x))}) %>% bind_rows()
+
+georows<-georows[order(georows$Line.Number),] 
+```
 
 #### Creating an index 
 
 ```
-bigIndex #Is a Index created with the 1624 variables with ID's from 165 to 2623, stored in input/bigIndex.xlsx, worked in the final script
+bigIndex<- dbSendQuery(conn, "SELECT id, characteristic_id FROM  censos.atlantic ORDER BY ID")
+bigIndex<- dbFetch(bigIndex) #
+bigIndex$characteristic_id <- as.numeric(bigIndex$characteristic_id)
+
+bigIndex <- bigIndex[1:1624,]
 
 bigIndex_of<-data.frame(id=1:length(bigIndex),iddb=bigIndex)
 
 index<-bigIndex_of[bigIndex_of$iddb%in%index,]
-
-#Testing the index for the old method  
-test<-split.data.frame(georows,data.frame(id=1:nrow(georows),georows)$id) %>% 
-  map(.,~as.data.frame(.$Line.Number+index$id)-2)
-
-test<-test %>% bind_rows(.) #Disorder in the index position, is not sequencial
 ```
+
+#### Creating an index for each table
+
+```
+#Case for each data table
+da_position<-lapply(georows,function(x){
+  vector <-c() 
+  for (i in 1:nrow(x)){ 
+          a<-index$id+1624*i
+          vector[[i]]<-a
+  }
+  vector<-c(index$id,vector) #I added a vector because 'a' start to count where the row finish
+  vec <- Reduce(c,vector)})
+
+gc()
+```
+
+#### Two ways to query, iterative for longer tables, just one query for lighter table
