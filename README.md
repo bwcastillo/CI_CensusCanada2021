@@ -5,7 +5,7 @@ Why to use Confidence Interval [Understanding Confidence Intervals (CI)](https:/
 [Downloading datasets from](https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger.cfm?Lang=E)
 
 
-###Part 1: Creating the environment to exctract data.
+### Part 1: Creating the environment to exctract data.
 
 #### Setting up directories
 
@@ -266,3 +266,106 @@ gc()
 ```
 
 #### Two ways to query, iterative for longer tables, just one query for lighter table
+#### First way to query for our variables of interest
+
+Creating a list that contains all the queries for each province
+```
+dbQuery<-list()
+for(i in 1:6){
+a<-paste(paste0("SELECT * 
+          FROM censos.",provinces[[i]]),"
+         WHERE",paste('id IN (',
+          paste(da_position[[i]], collapse=",")
+                 ),") ORDER BY ID;")
+dbQuery[[i]]<-a
+}
+```
+
+
+#### Second way, a mutant function that do everything
+
+1. Create chunks, it means that for each Dissemination Area identify what rows need to exctract to get the wanted variables. 
+2. After Make the query in two parts
+3. We exctract from the list returned what we want
+4. From list to data frame
+5. Join both data frame
+6. Done
+
+```
+get_data_chunk<-function(x,y){
+  # Doing chunks 
+  index<-split(da_position[[x]],ceiling(seq_along(da_position[[x]])/14))
+
+
+  # Creating queries by each chunk 
+  chunks<-lapply(index,function(x){
+  paste(paste0("SELECT *
+          FROM censos.",y),"
+         WHERE",paste('id IN (',
+                      paste(x, collapse=",")
+         ),") ORDER BY ID;")})
+
+
+  # Doing and collecting data in two sets through chunks 
+  query<-list()
+  for (i in 1:10000) {
+    x<-dbSendQuery(conn, chunks[[i]])
+    x<-dbFetch(x)
+    query[[i]]<-x
+  }
+  
+  query_2<-list()
+  for (i in 10001:length(index)) {
+    x<-dbSendQuery(conn, chunks[[i]])
+    x<-dbFetch(x)
+    query_2[[i]]<-x
+  }
+
+  # Extracting the part of the list of or interest 
+  # query_2<-query_2[10001:length(index)-14] #nrow with the original nrow count
+  query_2<-query_2[10001:length(index)-1] #nrow with the original nrow count
+
+  #bind rows 
+  query<-bind_rows(query)
+  query_2<-bind_rows(query_2)
+
+  # Joining the two sets
+  q<-rbind(query,query_2)
+  
+  write.csv(q,paste0("output/1raw_datasets/",y,"-raw.csv"))
+
+  return(q)}
+  ```
+
+#### How to query
+
+Its depend of the area 
+
+|N°| Province|Length Dissemination Areas|Length SQL Table| Function to query| Output name in R |Output name in .csv ||
+|:--|:-----: |:---:|:---:|:---:|:---:|
+|1|Atlantic|5424||dbSendQuery()|asdas|asdas|
+|2|British Columbia|8630||dbSendQuery()|asdas|asdas|
+|3|Ontario|21096||get_data_chunk()|asdas|asdas|
+|4|Prairies|12728||get_data_chunk()|asdas|asdas|
+|5|Quebec|asdas|15188||get_data_chunk()|asdasd|asdas|
+|6|Territories|343||asdas|dbSendQuery()|asdas|asdas|
+```
+q1<-dbSendQuery(conn, dbQuery[[1]])
+data_a<-dbFetch(q1)
+write.csv(data_a,paste0("output/1raw_datasets/",provinces[[1]],"-raw.csv"))
+rm(data_a,q1)          
+gc()
+
+q2<-dbSendQuery(conn, dbQuery[[2]])
+data_bc<-dbFetch(q2)
+write.csv(data_bc,paste0("output/1raw_datasets/",provinces[[2]],"-raw.csv"))
+rm(data_bc,q2)
+gc()
+
+
+q6<-dbSendQuery(conn, dbQuery[[6]])
+data_t<-dbFetch(q6)
+write.csv(data_t,paste0("output/1raw_datasets/",provinces[[6]],"-raw.csv"))
+```
+
+
