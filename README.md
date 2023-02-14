@@ -343,12 +343,12 @@ Its depend of the area
 
 |N°| Province|Length Dissemination Areas|Length SQL Table| Function to query| Output name in R |
 |:--|:-----: |:---:|:---:|:---:|:---:|
-|1|Atlantic|5424|8808576|dbSendQuery()|q1|
-|2|British Columbia|8630|14015120|dbSendQuery()|q2|
+|1|Atlantic|5424|8808576|dbSendQuery()|data_a|
+|2|British Columbia|8630|14015120|dbSendQuery()|data_bc|
 |3|Ontario|21096|34259904|get_data_chunk()|q3|
 |4|Prairies|12728|20670272|get_data_chunk()|q4|
 |5|Quebec|15188|24665312|get_data_chunk()|q5|
-|6|Territories|343|557032|dbSendQuery()|q6|
+|6|Territories|343|557032|dbSendQuery()|data_t|
 
 #### dbSendQuery()
 
@@ -378,4 +378,65 @@ write.csv(data_t,paste0("output/1raw_datasets/",provinces[[6]],"-raw.csv"))
 q3<-get_data_chunk(4,provinces[[4]])
 q4<-get_data_chunk(4,provinces[[4]])
 q5<-get_data_chunk(5,provinces[[5]])
+```
+
+
+### Formating 
+
+#### Creating a Veryfier function
+
+We create a function to verify that the variables obtained has keep correct id.
+```
+veryfier <- function(x){
+  x$characteristic_id2<-rep(c(135,1416,1439,1441,1451,1467,1488,1536,1695,1976,1999,2226,2227,2607), nrow(x)/14)
+  unique(x$characteristic_id==x$characteristic_id2) #Return true, and not true and false, all right
+  
+  veryfier(data_a)
+veryfier(data_bc)
+veryfier(q3)
+veryfier(q4)
+veryfier(q5)
+veryfier(data_t)
+
+}
+```
+
+#### 2. Slicing , sticking, wider
+
+##### A. Slicing
+1. We create the first it means select the variables of interest Count Total CI, Count Low CI, Count High CI.
+2. Changing character as numeric.
+3. Unnesting the numeric variables.
+
+##### B. Sticking
+1. Slicing to sticker to the Unnested x part of the dataset.
+2. We create an column that contains the order of the variables. 
+3. One new column that refer to the abbreviation name of each variable is created.
+4. The name of the numeric variables of interest are changed.
+
+#### C. Wider
+1. We *Pivot Wider* the column that contains the variables.
+```R
+datascape <-  function(x){
+  #Slice
+  y <- x
+  x<-x[,c(1:13,19,25)]
+  x<-mutate_if(x, cols=c(13:15),is.character,as.numeric) 
+  x<-unnest(x[,13:15])  #Unnesting converted (char2num) cols
+
+  #Sticker
+  y<-y[,c(1:13,19,25,49)]
+  y$variables<-rep(c("GOVTRANSFER","RENTER","CROWDHOME", "BUILT1960","REPAIRHOME",
+                     "SHLTCOSTR","MEDHOMVAL","RECENTIMMIGRANT","VISMIN_NIE",
+                     "MOVERS","NONDEGREE","UNEMPLOYED","NILF","PUBTRANSIT"), nrow(x)/14)
+  
+    x<-data.frame(y[,c(2:6,16,17)],x) #Adding var to converted
+
+  colnames(x)[7:10] <- c("ID", "TOTAL", "LOW_CI", "HIGH_CI")
+  
+
+  #Wider
+  x<-pivot_wider(x,names_from=ID,values_from=c(8:10)) #Expanding dataset
+  return(x)
+}
 ```
