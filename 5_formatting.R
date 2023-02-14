@@ -1,4 +1,4 @@
-
+# Test
 # Veryfying the saved datasets -------------------------------------------------------
 library(replyr)
 lapply(provinces, function(x){replyr_nrow(tbl(conn, tolower(x)))/1624*14})
@@ -66,6 +66,8 @@ dataset_ci <- rbind(data.frame(data_a,province="Atlantic"),
 veryfier(dataset_ci)
 
 dataset_ci$characteristic_id[1:14]
+
+
 #2. Slicing , sticking, wider
 
 datascape <-  function(x){
@@ -171,5 +173,3 @@ writexl::write_xlsx(da2021_rate,"C:\\CEDEUS\\2022\\dec01_bbddSina_KasraPaper\\ou
 # 
 # write.csv(query21da_ks,"C:\\CEDEUS\\2022\\dec01_bbddSina_KasraPaper\\output\\3csv\\query21da_100.csv")
 # writexl::write_xlsx(query21da_ks,"C:\\CEDEUS\\2022\\dec01_bbddSina_KasraPaper\\output\\2excel\\query21da_100.xlsx")
-
-

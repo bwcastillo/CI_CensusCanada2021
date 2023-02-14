@@ -97,6 +97,7 @@ gc()
 # data_on<-dbFetch(q3)
 
 # Ontario Case ------------------------------------------------------------
+# This the basis for the appendix function get_dat_chunk()
 
 #See if is working
 
