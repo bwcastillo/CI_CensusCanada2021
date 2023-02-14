@@ -341,14 +341,17 @@ get_data_chunk<-function(x,y){
 
 Its depend of the area 
 
-|N°| Province|Length Dissemination Areas|Length SQL Table| Function to query| Output name in R |Output name in .csv ||
+|N°| Province|Length Dissemination Areas|Length SQL Table| Function to query| Output name in R |
 |:--|:-----: |:---:|:---:|:---:|:---:|
-|1|Atlantic|5424||dbSendQuery()|asdas|asdas|
-|2|British Columbia|8630||dbSendQuery()|asdas|asdas|
-|3|Ontario|21096||get_data_chunk()|asdas|asdas|
-|4|Prairies|12728||get_data_chunk()|asdas|asdas|
-|5|Quebec|asdas|15188||get_data_chunk()|asdasd|asdas|
-|6|Territories|343||asdas|dbSendQuery()|asdas|asdas|
+|1|Atlantic|5424|8808576|dbSendQuery()|q1|
+|2|British Columbia|8630|14015120|dbSendQuery()|q2|
+|3|Ontario|21096|34259904|get_data_chunk()|q3|
+|4|Prairies|12728|20670272|get_data_chunk()|q4|
+|5|Quebec|15188|24665312|get_data_chunk()|q5|
+|6|Territories|343|557032|dbSendQuery()|q6|
+
+#### dbSendQuery()
+
 ```
 q1<-dbSendQuery(conn, dbQuery[[1]])
 data_a<-dbFetch(q1)
@@ -362,10 +365,17 @@ write.csv(data_bc,paste0("output/1raw_datasets/",provinces[[2]],"-raw.csv"))
 rm(data_bc,q2)
 gc()
 
-
 q6<-dbSendQuery(conn, dbQuery[[6]])
 data_t<-dbFetch(q6)
 write.csv(data_t,paste0("output/1raw_datasets/",provinces[[6]],"-raw.csv"))
 ```
 
 
+#### get_data_chunk()
+
+
+```R
+q3<-get_data_chunk(4,provinces[[4]])
+q4<-get_data_chunk(4,provinces[[4]])
+q5<-get_data_chunk(5,provinces[[5]])
+```
