@@ -1,20 +1,44 @@
 # Exctracting variables of Interest for Confidence Interval Census 2021 Canada - Dissemination Area scales
 
-Why to use Confidence Interval [Understanding Confidence Intervals (CI)](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-20-0001/982000012021003-eng.cfm)
+##Introduction 
 
-[Downloading datasets from](https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger.cfm?Lang=E)
+A lot of the 2021 Census variables does not show up the 100% of the population, rather it responds to a small sample that express an uncertainity in their values that can be managed with a *Confidence Interval (CI)*. **Stats Canada** has published an article *Why to use Confidence Interval* [Understanding Confidence Intervals (CI)](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-20-0001/982000012021003-eng.cfm). To the date (February 2023) is being hard to obtain these databases as *data frames* format, it is because the original databases come in sort of huge cross tables that, it would require be manipulated in a database managment as PostgreSQL or any other.
 
+This **Github** repository stores the code that allows to extract specific variables, however its documentation works as a methodology to follow up if another variables are requiered to exctract.
 
 ### Part 1: Creating the environment to exctract data.
 
 #### Setting up directories
 
-Create input folder extract the file `98-401-X2021006CI_eng_CSV` create a folder `csv_ddbb` and store the csv files  
+Create an *input* and a output folder. I use this structure because I think that is more convinient to order the code.  folder extract the file `98-401-X2021006CI_eng_CSV` create a folder `csv_ddbb` and store the csv files  
+
 `input/98-401-X2021006CI_eng_CSV/csv_ddbb/`
+
+```mermaid
+graph TD
+  database[Downloaded CI database \n 98-401-X2021006CI_eng_CSV.zip]
+  files[Files processed]
+  georows[98-401-X2021006CI_Geo_starting_row_Atlantic.CSV \n 98-401-X2021006CI_Geo_starting_row_Atlantic.CSV  \n 98-401-X2021006CI_Geo_starting_row_Atlantic.CSV \n 98-401-X2021006CI_Geo_starting_row_Atlantic.CSV \n 98-401-X2021006CI_Geo_starting_row_Atlantic.CSV \n 98-401-X2021006CI_Geo_starting_row_Atlantic.CSV]
+  csvdatabase[98-401-X2021006CI_English_CSV_data_Atlantic.csv \n 98-401-X2021006CI_English_CSV_data_BritishColumbia.csv \n 98-401-X2021006CI_English_CSV_data_Ontario.csv\n 98-401-X2021006CI_English_CSV_data_Prairies.csv \n 98-401-X2021006CI_English_CSV_data_Quebec.csv \n 98-401-X2021006CI_English_CSV_data_Territories.csv]
+  CI_CensusCanada2021-->Input
+  Input-->database
+  Input-->98-401-X2021006CI_eng_CSV
+  98-401-X2021006CI_eng_CSV-->csv_ddbb
+  98-401-X2021006CI_eng_CSV-->georows
+  csv_ddbb-->csvdatabase
+  CI_CensusCanada2021-->Output
+  Output-->files
+```
+
+#### Downloading and unziping the data
+[Downloading datasets from](https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger.cfm?Lang=E)
+```R
+
+```
 
 #### Establishing conection with Postgres SQL 
 
-```
+```R
 fun_connect<-function(){dbConnect(RPostgres::Postgres(),
                                   dbname='censos',
                                   host='localhost',
@@ -28,7 +52,7 @@ conn<-fun_connect()
 ```
 #### Getting the file names
 
-```
+```R
 file_name<-dir(paste0(here::here(),"/input/98-401-X2021006CI_eng_CSV/csv_ddbb")[1:6])
 provinces<-sub(".*data_", "", file_name)
 provinces<-sub(".7z*", "", provinces) 
@@ -37,7 +61,7 @@ provinces<-sub(".7z*", "", provinces)
 #### Creating tables queries
 We store the queries for each dataset through `lapply` function using the names stores in the above step. 
 
-```
+```R
 create_table<-lapply(provinces,function(x){paste0("CREATE TABLE ",x," (id SERIAL PRIMARY KEY,
 CENSUS_YEAR VARCHAR(50),
 DGUID VARCHAR(100),
@@ -89,7 +113,7 @@ SYMBOL18 VARCHAR(10))")})
 ````
 
 #### Sending queries to create tables
-````
+````R
 dbSendQuery(conn,create_table[[1]])#Atlantic
 dbSendQuery(conn,create_table[[2]])#BritishColumbia
 dbSendQuery(conn,create_table[[3]])#Ontario
@@ -103,7 +127,7 @@ dbSendQuery(conn,create_table[[6]])#Territories
 Creating the query to load the data. One database query for each list element. 
 Loading with `dbSendQuery` it doesn't work with `lapply()`
 
-```
+```R
 provinces_file<-data.frame(file=file_name,provinces=provinces)
 
 load_data<-list()
@@ -164,7 +188,7 @@ load_data[[i]]<-b
 
 Counting and contrasting with the original excel file that counts the rows
 
-```
+```R
 nrow_query<-list()
 for (i in 1:length(provinces)){
 query<-dbSendQuery(conn, paste0("SELECT count(*) FROM censos.",tolower(provinces[i])))
@@ -226,7 +250,7 @@ We just indetified 14 variables of interest
 
 #### Obtaining the Dissemination Areas 
 The dataset not include just the Dissemination Areas if not another types of aggregations. So with the file that cointains the positions of each geographic area with extract the Dissemination Areas. 
-```
+```R
 
 names_georow<-dir(paste0(here::here(),"/input/98-401-X2021006CI_eng_CSV"))[2:7]
 
@@ -237,7 +261,7 @@ georows<-georows[order(georows$Line.Number),]
 
 #### Creating an index 
 
-```
+```R
 bigIndex<- dbSendQuery(conn, "SELECT id, characteristic_id FROM  censos.atlantic ORDER BY ID")
 bigIndex<- dbFetch(bigIndex) #
 bigIndex$characteristic_id <- as.numeric(bigIndex$characteristic_id)
@@ -251,7 +275,7 @@ index<-bigIndex_of[bigIndex_of$iddb%in%index,]
 
 #### Creating an index for each table
 
-```
+```R
 #Case for each data table
 da_position<-lapply(georows,function(x){
   vector <-c() 
@@ -269,7 +293,7 @@ gc()
 #### First way to query for our variables of interest
 
 Creating a list that contains all the queries for each province
-```
+```R
 dbQuery<-list()
 for(i in 1:6){
 a<-paste(paste0("SELECT * 
@@ -291,7 +315,7 @@ dbQuery[[i]]<-a
 5. Join both data frame
 6. Done
 
-```
+```R
 get_data_chunk<-function(x,y){
   # Doing chunks 
   index<-split(da_position[[x]],ceiling(seq_along(da_position[[x]])/14))
@@ -352,7 +376,7 @@ Its depend of the area
 
 #### dbSendQuery()
 
-```
+```R
 q1<-dbSendQuery(conn, dbQuery[[1]])
 data_a<-dbFetch(q1)
 write.csv(data_a,paste0("output/1raw_datasets/",provinces[[1]],"-raw.csv"))
@@ -383,20 +407,20 @@ q5<-get_data_chunk(5,provinces[[5]])
 
 ### Formating 
 
-#### Creating a Veryfier function
+#### Creating a Verifier function
 
 We create a function to verify that the variables obtained has keep correct id.
-```
-veryfier <- function(x){
+```R
+verifier <- function(x){
   x$characteristic_id2<-rep(c(135,1416,1439,1441,1451,1467,1488,1536,1695,1976,1999,2226,2227,2607), nrow(x)/14)
   unique(x$characteristic_id==x$characteristic_id2) #Return true, and not true and false, all right
   
-  veryfier(data_a)
-veryfier(data_bc)
-veryfier(q3)
-veryfier(q4)
-veryfier(q5)
-veryfier(data_t)
+  verifier(data_a)
+verifier(data_bc)
+verifier(q3)
+verifier(q4)
+verifier(q5)
+verifier(data_t)
 
 }
 ```
@@ -414,7 +438,7 @@ veryfier(data_t)
 3. One new column that refer to the abbreviation name of each variable is created.
 4. The name of the numeric variables of interest are changed.
 
-#### C. Wider
+##### C. Wider
 1. We *Pivot Wider* the column that contains the variables.
 ```R
 datascape <-  function(x){
