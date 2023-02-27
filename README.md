@@ -1,5 +1,5 @@
 # Exctracting variables of Interest for Confidence Interval Census 2021 Canada - Dissemination Area scales
-
+##### Documentation under construction
 ##Introduction 
 
 A lot of the 2021 Census variables does not show up the 100% of the population, rather it responds to a small sample that express an uncertainity in their values that can be managed with a *Confidence Interval (CI)*. **Stats Canada** has published an article *Why to use Confidence Interval* [Understanding Confidence Intervals (CI)](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-20-0001/982000012021003-eng.cfm). To the date (February 2023) is being hard to obtain these databases as *data frames* format, it is because the original databases come in sort of huge cross tables that, it would require be manipulated in a database managment as PostgreSQL or any other.
@@ -10,9 +10,25 @@ This **Github** repository stores the code that allows to extract specific varia
 
 #### Setting up directories
 
-Create an *input* and a output folder. I use this structure because I think that is more convinient to order the code.  folder extract the file `98-401-X2021006CI_eng_CSV` create a folder `csv_ddbb` and store the csv files  
+First of all is necessary to create an *input* and a *output* folder. I use this structure because I think that is more convinient to order the code. In the input folder will be unziped the downloaded file `98-401-X2021006CI_eng_CSV.zip` creating a folder with the same name (*98-401-X2021006CI_eng_CSV*) and there just will remain the files that indicate the rows (*98-401-X2021006CI_Geo_starting_row_Province.CSV* pattern). We will create inner this last folder will a new one, called `csv_ddbb`, and we will cut and copy the csv files that contain the data of interest (*98-401-2021006_English_CSV_data_Province.csv* pattern).   
 
-`input/98-401-X2021006CI_eng_CSV/csv_ddbb/`
+#### Downloading and unziping the data
+The [dataset content will be downloaded from](https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger.cfm?Lang=E)
+
+```R
+
+options(timeout = max(300, getOption("timeout"))) #I expand the time to keep downloading a file 
+download.file('https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger/comp/GetFile.cfm?Lang=E&FILETYPE=CSV&GEONO=006',"input/98-401-X2021006CI_eng_CSV.zip", cacheOK=FALSE, mode = 'wb') #Downloading the file
+fold1 <- 'input/98-401-X2021006CI_eng_CSV2' #Create the address where I will create a folder to unzip the downloaded file
+dir.create(fold1)
+unzip("input/98-401-X2021006CI_eng_CSV.zip",exdir= fold1)
+fold2 <- 'input/98-401-X2021006CI_eng_CSV2/csv_ddbb'
+dir.create(fold2)
+move <- dir(fold1)[1:6]
+lapply(move, function(x){library(filesstrings)
+                          file.move(paste0(here::here(),fold1,x),
+                                    fold2)})
+```
 
 ```mermaid
 graph TD
@@ -30,11 +46,7 @@ graph TD
   Output-->files
 ```
 
-#### Downloading and unziping the data
-[Downloading datasets from](https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger.cfm?Lang=E)
-```R
 
-```
 
 #### Establishing conection with Postgres SQL 
 
