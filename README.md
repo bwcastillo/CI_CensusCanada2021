@@ -1,8 +1,8 @@
 # Exctracting variables of Interest for Confidence Interval Census 2021 Canada - Dissemination Area scales
 ##### Documentation under construction
-##Introduction 
+### Introduction 
 
-A lot of the 2021 Census variables does not show up the 100% of the population, rather it responds to a small sample that express an uncertainity in their values that can be managed with a *Confidence Interval (CI)*. **Stats Canada** has published an article *Why to use Confidence Interval* [Understanding Confidence Intervals (CI)](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-20-0001/982000012021003-eng.cfm). To the date (February 2023) is being hard to obtain these databases as *data frames* format, it is because the original databases come in sort of huge cross tables that, it would require be manipulated in a database managment as PostgreSQL or any other.
+A lot of the 2021 Census variables does not show up the 100% of the population, rather it responds to a small sample that express an uncertainity in their values that can be managed with a *Confidence Interval (CI)*. **Stats Canada** has published an article *Why to use Confidence Interval* [Understanding Confidence Intervals (CI)](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-20-0001/982000012021003-eng.cfm). To the date (February 2023) is being hard to obtain these databases as *data frames* format, it is because the original databases come in sort of huge cross tables that, it would require be manipulated in a database managment as **PostgreSQL** or any other.
 
 This **Github** repository stores the code that allows to extract specific variables, however its documentation works as a methodology to follow up if another variables are requiered to exctract.
 
@@ -10,25 +10,30 @@ This **Github** repository stores the code that allows to extract specific varia
 
 #### Setting up directories
 
-First of all is necessary to create an *input* and a *output* folder. I use this structure because I think that is more convinient to order the code. In the input folder will be unziped the downloaded file `98-401-X2021006CI_eng_CSV.zip` creating a folder with the same name (*98-401-X2021006CI_eng_CSV*) and there just will remain the files that indicate the rows (*98-401-X2021006CI_Geo_starting_row_Province.CSV* pattern). We will create inner this last folder will a new one, called `csv_ddbb`, and we will cut and copy the csv files that contain the data of interest (*98-401-2021006_English_CSV_data_Province.csv* pattern).   
+First of all is necessary to create an *input* and a *output* folder. Personally I use this structure because I think that is more convinient to order the code. In the input folder will be unziped the downloaded file *`98-401-X2021006CI_eng_CSV.zip`* creating a folder with the same name (*98-401-X2021006CI_eng_CSV* ) and, there just will remain the files that indicate the rows (*...CI_Geo_starting_row_Province.CSV* pattern). We will create inner the before mentioned folder a new one, called `csv_ddbb`, and we will cut and copy the csv files that contain the data of interest (*...English_CSV_data_Province.csv* pattern).   
 
 #### Downloading and unziping the data
-The [dataset content will be downloaded from](https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger.cfm?Lang=E)
+The dataset content will be downloaded from [StatsCanada](https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger.cfm?Lang=E)
 
 ```R
-
 options(timeout = max(300, getOption("timeout"))) #I expand the time to keep downloading a file 
 download.file('https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger/comp/GetFile.cfm?Lang=E&FILETYPE=CSV&GEONO=006',"input/98-401-X2021006CI_eng_CSV.zip", cacheOK=FALSE, mode = 'wb') #Downloading the file
-fold1 <- 'input/98-401-X2021006CI_eng_CSV2' #Create the address where I will create a folder to unzip the downloaded file
+fold1 <- 'input/98-401-X2021006CI_eng_CSV' #Create the address where I will create a folder to unzip the downloaded file
 dir.create(fold1)
-unzip("input/98-401-X2021006CI_eng_CSV.zip",exdir= fold1)
-fold2 <- 'input/98-401-X2021006CI_eng_CSV2/csv_ddbb'
+
+fold2 <- 'input/98-401-X2021006CI_eng_CSV/csv_ddbb/'
 dir.create(fold2)
+
+unzip("input/98-401-X2021006CI_eng_CSV.zip",exdir= fold1)
+
 move <- dir(fold1)[1:6]
+
 lapply(move, function(x){library(filesstrings)
-                          file.move(paste0(here::here(),fold1,x),
-                                    fold2)})
+  file.move(paste0(here::here(),'/',fold1,"/",x),
+            fold2)})
 ```
+
+The structure of our work-folders will be the next:
 
 ```mermaid
 graph TD
@@ -46,9 +51,9 @@ graph TD
   Output-->files
 ```
 
-
-
 #### Establishing conection with Postgres SQL 
+
+It will be necessary to have installed **Postgres SQL** and already created a database, in this case is called censos. Also you will need to provide a user, password and if you want a possible schema to make conection. 
 
 ```R
 fun_connect<-function(){dbConnect(RPostgres::Postgres(),
@@ -62,8 +67,28 @@ fun_connect<-function(){dbConnect(RPostgres::Postgres(),
 conn<-fun_connect()
 
 ```
-#### Getting the file names
+#### Compressing- Deleting raw files and Getting the names
+Before to create our tables in **Postgres SQ*L* will be necessary to compress the files as **.7z** format because thanks to this format we can load heavy datasets in **Postgres SQL**. Also, will be necessary to delete the *.csv* files that contain the original data. In this way, we can obtain all the names of the **.7z** files in this folder and load the data automatically in **Postgres SQL**.
 
+##### Creating the 7zip
+```R
+
+lapply(move, function(x){
+  system(
+  paste0('7z a \"', str_replace_all(here::here(),"/","\\\\"),'\\\\', str_replace_all(fold2,"/","\\\\" ),str_remove(x,'.csv'),'.7z\" ',
+         paste0('\"',str_replace_all(here::here(),"/","\\\\"),'\\\\', str_replace_all(fold2,"/","\\\\" ), x),'\"'),
+  intern=F,
+  ignore.stdout = F,
+  ignore.stderr = F,
+  wait=T)})
+```
+##### Removing the .csv files
+```R
+lapply(move,function(x){unlink(paste0(here::here(),'/',fold2,x))})
+```
+
+
+##### Obtaining the file names to load the data
 ```R
 file_name<-dir(paste0(here::here(),"/input/98-401-X2021006CI_eng_CSV/csv_ddbb")[1:6])
 provinces<-sub(".*data_", "", file_name)
@@ -71,7 +96,7 @@ provinces<-sub(".7z*", "", provinces)
 ```
 
 #### Creating tables queries
-We store the queries for each dataset through `lapply` function using the names stores in the above step. 
+In this step we will create the tables to load the data of our **.7zip** files. Basically, here we store the queries for each dataset through `lapply` function using the names stores in the above step. 
 
 ```R
 create_table<-lapply(provinces,function(x){paste0("CREATE TABLE ",x," (id SERIAL PRIMARY KEY,
@@ -125,6 +150,9 @@ SYMBOL18 VARCHAR(10))")})
 ````
 
 #### Sending queries to create tables
+
+In this step we send the query for each table. Maybe you would wonder why am I not using a `lapply` function, and is because it does not work. *I think that I should report this to the package **RPostgreSQL** or **DBI**.*
+
 ````R
 dbSendQuery(conn,create_table[[1]])#Atlantic
 dbSendQuery(conn,create_table[[2]])#BritishColumbia
@@ -136,8 +164,7 @@ dbSendQuery(conn,create_table[[6]])#Territories
 
 #### Loading tables with data
 
-Creating the query to load the data. One database query for each list element. 
-Loading with `dbSendQuery` it doesn't work with `lapply()`
+Now, all the effort that we did before about build our folder structure, move heavy files, compress in a specific format and remove another ones has result. Because is moment to create the query to load the data. One database query for each list element because how I said before, loading with `dbSendQuery` it doesn't work with `lapply()`.
 
 ```R
 provinces_file<-data.frame(file=file_name,provinces=provinces)
@@ -198,7 +225,7 @@ load_data[[i]]<-b
 
 #### Counting how many rows has each database
 
-Counting and contrasting with the original excel file that counts the rows
+Ok, our databases should be loaded in our *SQL Database manager*, in this case a.k.a **Postgres SQL*, so we will count the rows of each table and contrast this information with the original excel file that counts the rows.
 
 ```R
 nrow_query<-list()
@@ -229,15 +256,14 @@ sum(b)
 
 #### Pause: comments
 
-I tried to unite the table and do the query from there but it results very heavy for the computer. To query a table with this in a bigger computer is possible to use Amazon Web Services how is explained in [this tutorial](https://github.com/bwcastillo/doc-postgresqlandr) 
-Is possible to see how to join the tables and when I tried to exctract information in there, in the file `1_connection_setup.R` from the line 180 to the end of the code. The query where I tried to exctract the data is in the file `2_bigQuery.R`.
+I tried to unite the table and do the query from there but it results very heavy for the computer. To query a table with this in a bigger computer is possible to use Amazon Web Services how i will explain in the future in another [tutorial-documentation](https://github.com/bwcastillo/doc-postgresqlandr). Is possible to see how to join the tables and when I tried to exctract information in there, in the file `1_connection_setup.R`, and after how I tried to extract the data in the file `2_bigQuery.R`.
 
 
 ### Part2: Exctracting data
 
 #### Creating a weird index
 
-It was necessary to build a weird index, but... what it means? It is a weird index because to exctract the variables in each database is necessary reference to its id (*SERIAL PRIMARY KEY*) and name description. The problem is that these identifiers are not ordered, if you realize the variables in the file `98-401-X2021006CI_English_meta.txt` the 1624 variables are nummered from 126 to 2623... ok, what is the problem with this? If you sustract 126 to 2623 is equal to 2497, damn! So what it was done, was copied the number descriptor of the variables in the files mentioned before in an excel file and I added a comma, in that way I could exctract them in the database. So once we get this original index it means from 126 to 2623 and we add a column with the index from 1 to 1624 beside the original one, so in that way we could know what is the original number of each variable. People can say that is better to select the original Id, identify where are the breaks and create and index from there, or maybe query for the name of the variable, but those are another alternatives to explore.  
+It was necessary to build a weird index, but... what does it mean? It is a weird index because to exctract the variables in each database is necessary reference to its id (*SERIAL PRIMARY KEY*) and name description. The problem is that these identifiers are not ordered, if you realize the variables in the file `98-401-X2021006CI_English_meta.txt` the 1624 variables are nummered from 126 to 2623... ok, what is the problem with this? If you sustract 126 to 2623 is equal to 2497, damn! So what it was done, was copied the number descriptor of the variables in the files mentioned before in an excel file and I added a comma, in that way I could exctract them in the database. So once we get this original index it means from 126 to 2623 and we add a column with the index from 1 to 1624 beside the original one, so in that way we could know what is the original number of each variable. People can say that is better to select the original Id, identify where are the breaks and create and index from there, or maybe query for the name of the variable, but those are another alternatives to explore.  
 
 #### Subseting the index
 
