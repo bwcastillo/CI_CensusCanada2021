@@ -261,9 +261,9 @@ I tried to unite the table and do the query from there but it results very heavy
 
 ### Part2: Exctracting data
 
-#### Creating a weird index
+#### Creating a index to identify the variables
 
-It was necessary to build a weird index, but... what does it mean? It is a weird index because to exctract the variables in each database is necessary reference to its id (*SERIAL PRIMARY KEY*) and name description. The problem is that these identifiers are not ordered, if you realize the variables in the file `98-401-X2021006CI_English_meta.txt` the 1624 variables are nummered from 126 to 2623... ok, what is the problem with this? If you sustract 126 to 2623 is equal to 2497, damn! So what it was done, was copied the number descriptor of the variables in the files mentioned before in an excel file and I added a comma, in that way I could exctract them in the database. So once we get this original index it means from 126 to 2623 and we add a column with the index from 1 to 1624 beside the original one, so in that way we could know what is the original number of each variable. People can say that is better to select the original Id, identify where are the breaks and create and index from there, or maybe query for the name of the variable, but those are another alternatives to explore.  
+It was necessary to build a index to identify the variables that we are looking for... what does it mean? This index allows us to extract the variables in each database, so is necessary reference to its id (*SERIAL PRIMARY KEY*) and name description. The problem is that these identifiers are not sorted, if you realize the variables in the file `98-401-X2021006CI_English_meta.txt` the 1624 variables are nummered from 126 to 2623... ok, what is the problem with this? If you sustract 126 to 2623 is equal to 2497 and not 1624, damn! So what it was done, was obtain the columns `id` and `characteristic_id` from one of the tables, after just select the first 1624 rows, after that weas added a column with a sequencial index from 1 to 1624 beside the original one, so in that way we could know what is the original number of each variable. After that, it was filtered this index with the original position of the 14 variables that we are interested in, described in the table below. Finally, we can consider another possible alternatives as, select the original Id, identify where are the breaks and create and index from there, or maybe query for the name of the variable.  
 
 #### Subseting the index
 
@@ -287,7 +287,7 @@ We just indetified 14 variables of interest
 |14| 2607 | 1608|Total - Main mode of commuting for the employed labour force aged 15 years and over with a usual place of work or no fixed workplace address - 25% sample data (200) -<br> **Public transit**|
 
 #### Obtaining the Dissemination Areas 
-The dataset not include just the Dissemination Areas if not another types of aggregations. So with the file that cointains the positions of each geographic area with extract the Dissemination Areas. 
+The dataset not include only the *Dissemination Areas* if not another types of aggregations. So with the file that cointains the positions of each geographic area with extract the Dissemination Areas. 
 ```R
 
 names_georow<-dir(paste0(here::here(),"/input/98-401-X2021006CI_eng_CSV"))[2:7]
@@ -296,9 +296,9 @@ georows<-lapply(names_georow, function(x){read.csv(paste0(here::here(),"/input/9
 
 georows<-georows[order(georows$Line.Number),] 
 ```
-
 #### Creating an index 
 
+In this section is created the index how was described in the begin of this second part. 
 ```R
 bigIndex<- dbSendQuery(conn, "SELECT id, characteristic_id FROM  censos.atlantic ORDER BY ID")
 bigIndex<- dbFetch(bigIndex) #
@@ -312,6 +312,7 @@ index<-bigIndex_of[bigIndex_of$iddb%in%index,]
 ```
 
 #### Creating an index for each table
+With the index created above, now we create a specific length index for each one of the tables.
 
 ```R
 #Case for each data table
@@ -327,10 +328,11 @@ da_position<-lapply(georows,function(x){
 gc()
 ```
 
-#### Two ways to query, iterative for longer tables, just one query for lighter table
-#### First way to query for our variables of interest
+#### Two ways to query to the tables:  1) just to do one *SQL* query for lighter table or, 2) iterate queries for each row, method for longer tables.
 
-Creating a list that contains all the queries for each province
+#### First way to query for our variables of interest
+This path will be used to query lighter tables, this method creates a list that contains all the queries for each province.
+
 ```R
 dbQuery<-list()
 for(i in 1:6){
@@ -345,8 +347,9 @@ dbQuery[[i]]<-a
 
 
 #### Second way, a mutant function that do everything
+This second way perhaps is not so fancy, but obtain the result and avoid some boring steps if we include them in a function. Basically we create a function that do the next:
 
-1. Create chunks, it means that for each Dissemination Area identify what rows need to exctract to get the wanted variables. 
+1. Create chunks, it means that for each *Dissemination Area* identify what rows need to exctract to get the wanted variables. 
 2. After Make the query in two parts
 3. We exctract from the list returned what we want
 4. From list to data frame
@@ -399,9 +402,10 @@ get_data_chunk<-function(x,y){
   return(q)}
   ```
 
-#### How to query
+#### How to query?
 
-Its depend of the area 
+So how we know what method to use? Its depend of the area and the capacity of you computer, in my case I am using a `Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 11 x64 (build 22621)` with `12gb RAM` and `500gb hard disk`. So, I did the queries as show the next table:
 
 |N°| Province|Length Dissemination Areas|Length SQL Table| Function to query| Output name in R |
 |:--|:-----: |:---:|:---:|:---:|:---:|
@@ -412,8 +416,8 @@ Its depend of the area
 |5|Quebec|15188|24665312|get_data_chunk()|q5|
 |6|Territories|343|557032|dbSendQuery()|data_t|
 
-#### dbSendQuery()
-
+#### Method 1: dbQuery()
+Here I am querying and saving the results for the lighter tables, using the first method.
 ```R
 q1<-dbSendQuery(conn, dbQuery[[1]])
 data_a<-dbFetch(q1)
@@ -433,8 +437,8 @@ write.csv(data_t,paste0("output/1raw_datasets/",provinces[[6]],"-raw.csv"))
 ```
 
 
-#### get_data_chunk()
-
+#### Method 2: get_data_chunk()
+The function `get_data_`chunk()` will be used for the heavier data set, in this case for Ontario, Prairies, Quebec.
 
 ```R
 q3<-get_data_chunk(4,provinces[[4]])
@@ -443,27 +447,40 @@ q5<-get_data_chunk(5,provinces[[5]])
 ```
 
 
-### Formating 
+### Part 3: Formating 
 
-#### Creating a Verifier function
+Finally we will format the tables obtained. This is is an important step because we should remember that the data comes in an interesting format, sort of crossed tables, where for each 1624 rows a new geographic area start. So escencially in this part we will do wider our tables, it means we will put the *'row variables'* as columns, obtaining a regular *data frame* that we will allows us to have a better format to analyze the data of interest.
 
-We create a function to verify that the variables obtained has keep correct id.
+#### Creating a *Verifier* function
+
+First, we create a function to verify that the variables obtained has keep correct id. It will return us TRUE if all is right for each dataset.
+
 ```R
 verifier <- function(x){
   x$characteristic_id2<-rep(c(135,1416,1439,1441,1451,1467,1488,1536,1695,1976,1999,2226,2227,2607), nrow(x)/14)
   unique(x$characteristic_id==x$characteristic_id2) #Return true, and not true and false, all right
   
-  verifier(data_a)
+verifier(data_a)
 verifier(data_bc)
 verifier(q3)
 verifier(q4)
 verifier(q5)
 verifier(data_t)
 
+dataset_ci <- rbind(data.frame(data_a,province="Atlantic"),
+                    data.frame(data_bc,province="British Columbia"),
+                    data.frame(q3,province="Ontario"),
+                    data.frame(q4,province="Praires"),
+                    data.frame(q5,province="Quebec"),
+                    data.frame(data_t,province="Territories"))
+
+veryfier(dataset_ci)
+
 }
 ```
 
 #### 2. Slicing , sticking, wider
+Finally, a lot of steps to format will be necessary, so before to replicate each one of them to each data set is better to analyze what we will need to use, include this steps in a function and replicate it for each dataset. In this case I identified 3 part with different steps in each one of them.  
 
 ##### A. Slicing
 1. We create the first it means select the variables of interest Count Total CI, Count Low CI, Count High CI.
@@ -478,6 +495,7 @@ verifier(data_t)
 
 ##### C. Wider
 1. We *Pivot Wider* the column that contains the variables.
+
 ```R
 datascape <-  function(x){
   #Slice
@@ -501,4 +519,20 @@ datascape <-  function(x){
   x<-pivot_wider(x,names_from=ID,values_from=c(8:10)) #Expanding dataset
   return(x)
 }
+```
+
+Now, we will apply this function to all the dataset `dataset_ci` joined in the last step above, and just the *Dissemination Areas* will be filtered. 
+
+```R
+prueba <- datascape(dataset_ci)
+da2021 <- prueba[prueba$geo_level=="Dissemination area",]
+`
+```
+
+**Voilá** our new dataset :P, but...! We should to verify if length match with the [*Dissemination Area boundaries dataset*](https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/boundary-limites/index2021-eng.cfm?year=21)
+
+```R
+boundaries21<-sf::st_read(paste0(here::here(),"\\input\\boundaries_21DA\\lda_000b21a_e\\lda_000b21a_e.shp"))
+da2021$dguid[!(da2021$dguid%in%unique(boundaries21$DGUID))] #This  DA are insignificant has not data :(
+
 ```
