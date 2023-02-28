@@ -3,6 +3,40 @@ library(dplyr)
 library(tidyverse)
 library(DBI)
 
+# 0.Getting data
+options(timeout = max(300, getOption("timeout"))) #I expand the time to keep downloading a file 
+download.file('https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger/comp/GetFile.cfm?Lang=E&FILETYPE=CSV&GEONO=006',"input/98-401-X2021006CI_eng_CSV.zip", cacheOK=FALSE, mode = 'wb') #Downloading the file
+fold1 <- 'input/98-401-X2021006CI_eng_CSV2' #Create the address where I will create a folder to unzip the downloaded file
+dir.create(fold1)
+
+fold2 <- 'input/98-401-X2021006CI_eng_CSV2/csv_ddbb/'
+dir.create(fold2)
+
+unzip("input/98-401-X2021006CI_eng_CSV.zip",exdir= fold1)
+
+move <- dir(fold1)[1:6]
+
+lapply(move, function(x){library(filesstrings)
+  file.move(paste0(here::here(),'/',fold1,"/",x),
+            fold2)})
+
+
+
+#Create 7zip
+lapply(move, function(x){
+  system(
+  paste0('7z a \"', str_replace_all(here::here(),"/","\\\\"),'\\\\', str_replace_all(fold2,"/","\\\\" ),str_remove(x,'.csv'),'.7z\" ',
+         paste0('\"',str_replace_all(here::here(),"/","\\\\"),'\\\\', str_replace_all(fold2,"/","\\\\" ), x),'\"'),
+  intern=F,
+  ignore.stdout = F,
+  ignore.stderr = F,
+  wait=T)})
+
+
+#Remove csv files
+lapply(move,function(x){unlink(paste0(here::here(),'/',fold2,x))})
+
+
 # 1.Establishing connection -----------------------
 
 fun_connect<-function(){dbConnect(RPostgres::Postgres(),
@@ -88,7 +122,7 @@ provinces_file<-data.frame(file=file_name,provinces=provinces)
 
 load_data<-list()
 for (i in 1:nrow(provinces_file)){
-b<-paste0("copy censos.",provinces_file$provinces[i] ," (CENSUS_YEAR,
+  b<-paste0("copy censos.",provinces_file$provinces[i] ," (CENSUS_YEAR,
           DGUID,
           ALT_GEO_CODE,
           GEO_LEVEL,
@@ -136,8 +170,10 @@ b<-paste0("copy censos.",provinces_file$provinces[i] ," (CENSUS_YEAR,
           \"C18_RATE_HI_CI_WOMEN+\",
           SYMBOL18) 
           FROM PROGRAM '7z e -so C:/CEDEUS/2022/dec01_bbddSina_KasraPaper/input/98-401-X2021006CI_eng_CSV/csv_ddbb/",provinces_file$file[i],"' DELIMITER ',' CSV HEADER encoding 'windows-1251';")
-load_data[[i]]<-b
+  load_data[[i]]<-b
 }
+
+
 
 lapply(load_data, function(x){dbSendQuery(conn,x)})
 
@@ -152,8 +188,8 @@ dbSendQuery(conn,load_data[[6]])#Territories
 # 5.Counting how many rows has each dataset ---------------------------------
 nrow_query<-list()
 for (i in 1:length(provinces)){
-query<-dbSendQuery(conn, paste0("SELECT count(*) FROM censos.",tolower(provinces[i])))
-nrow_query[[i]]<-dbFetch(query)
+  query<-dbSendQuery(conn, paste0("SELECT count(*) FROM censos.",tolower(provinces[i])))
+  nrow_query[[i]]<-dbFetch(query)
 }
 
 nrow_query[1]
@@ -182,17 +218,17 @@ sum(b)
 #dbSendQuery(conn, "DROP TABLE censos.census2021_ci")
 
 dbSendQuery(conn, paste("CREATE TABLE census2021_ci AS",
-                  paste0("SELECT * FROM censos.",provinces[1]),
-                  "UNION ALL",
-                  paste0("SELECT * FROM censos.",provinces[2]),  
-                  "UNION ALL",
-                  paste0("SELECT * FROM censos.",provinces[3]),
-                  "UNION ALL",
-                  paste0("SELECT * FROM censos.",provinces[4]),
-                  "UNION ALL",
-                  paste0("SELECT * FROM censos.",provinces[5]),
-                  "UNION ALL",
-                  paste0("SELECT * FROM censos.",provinces[6]))) 
+                        paste0("SELECT * FROM censos.",provinces[1]),
+                        "UNION ALL",
+                        paste0("SELECT * FROM censos.",provinces[2]),  
+                        "UNION ALL",
+                        paste0("SELECT * FROM censos.",provinces[3]),
+                        "UNION ALL",
+                        paste0("SELECT * FROM censos.",provinces[4]),
+                        "UNION ALL",
+                        paste0("SELECT * FROM censos.",provinces[5]),
+                        "UNION ALL",
+                        paste0("SELECT * FROM censos.",provinces[6]))) 
 
 query<-dbSendQuery(conn, "SELECT count(*) FROM censos.census2021_ci")
 nrow_bigddbb<-dbFetch(query)
@@ -227,4 +263,3 @@ q2<-dbFetch(q2)
 
 tail(q1, 10)
 gc()
-#possible posible 
