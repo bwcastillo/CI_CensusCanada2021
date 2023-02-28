@@ -646,4 +646,4 @@ Finally, we will save our results in *.csv* and *.xlsx* format.
 
 Acknowledge: This tutorial documentation is part of my work experience at [Partners for Action (P4A) - University of Waterloo](https://uwaterloo.ca/partners-for-action/)
 
-PS: Any questions please feel free to write me to *bwcastillo@uc.cl*
+PS: (1) The database keeps NA values, which means that I didn't replace NA for 0 \n (2)Any questions please feel free to write me to *bwcastillo@uc.cl*
