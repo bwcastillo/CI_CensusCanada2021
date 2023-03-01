@@ -1,10 +1,10 @@
-# Extracting variables of Interest for Confidence Interval Census 2021 Canada - Dissemination Area scales
+# Extracting variables of interest for Confidence Interval Census 2021 Canada - Dissemination Area scale.
 
 ### Introduction 
 
 A lot of the 2021 Census variables do not show up the 100% of the population, rather it responds to a small sample that expresses an uncertainty in their values that can be managed with a *Confidence Interval (CI)*. **Stats Canada** has published an article *Why to use Confidence Interval* [Understanding Confidence Intervals (CI)](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-20-0001/982000012021003-eng.cfm). To date (February 2023) is hard to obtain these databases in *data frames* format, it is because the original databases come in sort of huge cross tables that, would require to be manipulated in database management as **PostgreSQL** or any other.
 
-This **Github** repository stores the code that allows extracting specific variables, however, its documentation works as a methodology to follow up if other variables are required to extract.
+This **Github** repository stores the code that allows extracting specific variables, however, its documentation works as a methodology to follow up if other variables are required to extract. You should specify your variables of interest in *chunks* 11 and 19, I did notes indicating where the changes should be done.
 
 ### Part 1: Creating the environment to extract data.
 
@@ -544,16 +544,16 @@ Note:
   datascape <-  function(x){
     #Slice
     y <- x
-    x<-x[,c(1:13,19,25)]  #Tricky step replicate first the example, and correct the index according you selection
-    x<-mutate_if(x, cols=c(13:15),is.character,as.numeric)  #Tricky step replicate first the example, and correct the index according you selection
+    x<-x[,c(1:13,19,25)] 
+    x<-mutate_if(x, cols=c(13:15),is.character,as.numeric) 
     x<-unnest(x[,13:15])  #Unnesting converted (char2num) cols
     
     #Sticker
-    y<-y[,c(1:13,19,25,49)]  #Tricky step replicate first the example, and correct the index according you selection
-    y$variables<-rep(c("GOVTRANSFER","RENTER","CROWDHOME", "BUILT1960","REPAIRHOME", #Change the name of variables according you selection
+    y<-y[,c(1:13,19,25,49)] 
+    y$variables<-rep(c("GOVTRANSFER","RENTER","CROWDHOME", "BUILT1960","REPAIRHOME",#Change the name of variables according to you selection it should have the same length as the chunk 11
                        "SHLTCOSTR","MEDHOMVAL","RECENTIMMIGRANT","VISMIN_NIE",
-                       "MOVERS","NONDEGREE","UNEMPLOYED","NILF","PUBTRANSIT"), nrow(x)/14)#Change '14' for the number of variables that you chose
-    
+                       "MOVERS","NONDEGREE","UNEMPLOYED","NILF","PUBTRANSIT"), nrow(x)/nrow(index))#The nrow(index) should have the same number as variables you chose in the chunk 11
+                       
     x<-data.frame(y[,c(2:6,16,17)],x) #Adding var to converted
     
     colnames(x)[7:10] <- c("ID", "TOTAL", "LOW_CI", "HIGH_CI")
@@ -600,15 +600,15 @@ Note:
 datascape_rates <-  function(x){
     #Slice
     y <- x
-    x<-x[,c(1:12,31,37,43)] #Tricky step replicate first the example, and correct the index according you selection
+    x<-x[,c(1:12,31,37,43)] 
     x<-mutate_if(x, cols=c(13:15),is.character,as.numeric)
     x<-unnest(x[,13:15])  #Unnesting converted (char2num) cols
     
     #Sticker
-    y<-y[,c(1:12,31,37,43,49)] #Tricky step replicate first the example, and correct the index according you selection
-    y$variables<-rep(c("GOVTRANSFER","RENTER","CROWDHOME", "BUILT1960","REPAIRHOME", #Change the name of variables according you selection
+    y<-y[,c(1:12,31,37,43,49)] 
+    y$variables<-rep(c("GOVTRANSFER","RENTER","CROWDHOME", "BUILT1960","REPAIRHOME",#Change the name of variables according to you selection it should have the same length as the chunk 11
                        "SHLTCOSTR","MEDHOMVAL","RECENTIMMIGRANT","VISMIN_NIE", 
-                       "MOVERS","NONDEGREE","UNEMPLOYED","NILF","PUBTRANSIT"), nrow(x)/14) #Change '14' for the number of variables that you chose 
+                       "MOVERS","NONDEGREE","UNEMPLOYED","NILF","PUBTRANSIT"), nrow(x)/nrow(index)) #The nrow(index) should have the same number as variables you chose in the chunk 11
     
     x<-data.frame(y[,c(2:6,16,17)],x) #Adding var to converted
     
