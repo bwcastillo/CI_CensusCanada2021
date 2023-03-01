@@ -4,7 +4,7 @@
 
 A lot of the 2021 Census variables do not show up the 100% of the population, rather it responds to a small sample that expresses an uncertainty in their values that can be managed with a *Confidence Interval (CI)*. **Stats Canada** has published an article *Why to use Confidence Interval* [Understanding Confidence Intervals (CI)](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-20-0001/982000012021003-eng.cfm). To date (February 2023) is hard to obtain these databases in *data frames* format, it is because the original databases come in sort of huge cross tables that, would require to be manipulated in database management as **PostgreSQL** or any other.
 
-This **Github** repository stores the code that allows extracting specific variables, however, its documentation works as a methodology to follow up if other variables are required to extract. You should specify your variables of interest in *chunks* 11 and 19, I did notes indicating where the changes should be done.
+This **Github** repository stores the code of a reproducible example (*reprex*) that allows extracting specific variables from the *Confidence Intervals from the 2021 Canadian Census*, which means you could execute all the *chunks* (from 0-23) and obtain the same results, that I got. However, its documentation works as a methodology to follow up if other variables are required to extract. You should specify your variables of interest in *chunks* 11 and 19, I did notes indicating where the changes should be done. You could pick up other variables from the file `98-401-X2021006CI_English_meta.txt` that comes with the database that will be downloaded, read the beginning of **Part 2** and use the first table of this section to understand how to do that. 
 
 ### Part 1: Creating the environment to extract data.
 
@@ -51,7 +51,7 @@ The structure of our work folders will be the next:
 graph TD
   database[Downloaded CI database \n 98-401-X2021006CI_eng_CSV.zip]
   files[Files processed]
-  georows[98-401-X2021006CI_Geo_starting_row_Atlantic.CSV \n 98-401-X2021006CI_Geo_starting_row_BritishColumbia.CSV  \n 98-401-X2021006CI_Geo_starting_row_Ontario.CSV \n 98-401-X2021006CI_Geo_starting_row_Prairies.CSV \n 98-401-X2021006CI_Geo_starting_row_Quebec.CSV \n 98-401-X2021006CI_Geo_starting_row_Territories.CSV]
+  georows[98-401-X2021006CI_Geo_starting_row_Atlantic.CSV \n 98-401-X2021006CI_Geo_starting_row_BritishColumbia.CSV  \n 98-401-X2021006CI_Geo_starting_row_Ontario.CSV \n 98-401-X2021006CI_Geo_starting_row_Prairies.CSV \n 98-401-X2021006CI_Geo_starting_row_Quebec.CSV \n 98-401-X2021006CI_Geo_starting_row_Territories.CSV\n 98-401-X2021006CI_English_meta.txt\n README_meta.txt]
   csvdatabase[98-401-X2021006CI_English_CSV_data_Atlantic.csv \n 98-401-X2021006CI_English_CSV_data_BritishColumbia.csv \n 98-401-X2021006CI_English_CSV_data_Ontario.csv\n 98-401-X2021006CI_English_CSV_data_Prairies.csv \n 98-401-X2021006CI_English_CSV_data_Quebec.csv \n 98-401-X2021006CI_English_CSV_data_Territories.csv]
   CI_CensusCanada2021-->Input
   Input-->database
@@ -69,6 +69,8 @@ graph TD
   3csv-->query21da_ci.csv
   3csv-->query21da_cirate.csv
 ```
+
+** Don't forget to read the `README_meta.txt` file to understand what you downloaded.
 
 #### Establishing connection with Postgres SQL 
 
@@ -294,13 +296,13 @@ I tried to unite the table and do the query from there but it results were very 
 
 #### Creating an index to identify the variables
 
-It was necessary to build an index to identify the variables that we are looking for... what does it mean? This index allows us to extract the variables in each database, so is a necessary reference to its id (*SERIAL PRIMARY KEY*) and name description. The problem is that these identifiers are not sorted, if you realize the variables in the file `98-401-X2021006CI_English_meta.txt` 1624 variables are numbered from 126 to 2623... ok, what is the problem with this? If you subtract 126 from 2623 is equal to 2497 and not 1624, damn! So what was done, was obtain the columns `id` and `characteristic_id` from one of the tables, after just selecting the first 1624 rows, after that was added a column with a sequential index from 1 to 1624 besides the original one, so in that way, we could know what is the original number of each variable. After that, it was filtered this index with the original position of the 14 variables that we are interested in, described in the table below. Finally, we can consider other possible alternatives, select the original Id, identify where are the breaks, and create an index from there, or maybe query for the name of the variable.  
+It was necessary to build an index to identify the variables that we are looking for... what does it mean? This index allows us to extract the variables in each database, so is a necessary reference to its id (*SERIAL PRIMARY KEY*) and name description. The problem is that these identifiers are not sorted, if you realize the variables in the file `98-401-X2021006CI_English_meta.txt` (stored at `98-401-X2021006CI_eng_CSV`), 1624 variables are numbered from 126 to 2623... ok, what is the problem with this? If you subtract 126 from 2623 is equal to 2497 and not 1624, damn! So what was done, was obtain the columns `id` and `characteristic_id` from one of the tables, after just selecting the first 1624 rows, after that was added a column with a sequential index from 1 to 1624 besides the original one, so in that way, we could know what is the original number of each variable. After that, it was filtered this index with the original position of the 14 variables that we are interested in, described in the table below. Finally, we can consider other possible alternatives, select the original Id, identify where are the breaks, and create an index from there, or maybe query for the name of the variable.  
 
 #### Subseting the index
 
 We just identified 14 variables of interest for our study.
 
-|N°| N° Index Original  | N° Index Database (PostgreSQL) |  Variable Description| 
+|N°| N° Index Original<br><sub><sup>(at 98-401-X2021006CI_English_meta.txt)</sub></sup> | N° Index Database (PostgreSQL) |  Variable Description| 
 |:------------- |:-------------:|:-------------:| :-----:|
 |1| 135 | 10 |**Number of government transfers recipients aged 15 years and over in private households in 2020 - 25% sample data** |
 |2| 1416 | 417|Total - Private households by tenure - 25% sample data (50) - **Renter**|
