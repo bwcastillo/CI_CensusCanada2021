@@ -166,7 +166,7 @@ index<-c(135,1416,1439,1441,1451,1467,1488,1536,1695,1976,1999,2226,2227,2607)#1
 
 # 12 ----------------------------------------------------------------------
 
-bigIndex<- dbSendQuery(conn, "SELECT id, characteristic_id FROM  censos.atlantic ORDER BY ID")
+bigIndex<- dbSendQuery(conn, "SELECT id, characteristic_id FROM censos.atlantic ORDER BY ID")
 bigIndex<- dbFetch(bigIndex) #
 bigIndex$characteristic_id <- as.numeric(bigIndex$characteristic_id)
 
@@ -305,22 +305,20 @@ verifier <- function(x){
   verifier(dataset_ci)
   
 
-
-
 # 19 ----------------------------------------------------------------------
 
   datascape <-  function(x){
     #Slice
     y <- x
-    x<-x[,c(1:13,19,25)]  #Tricky step replicate first the example, and correct the index according you selection
-    x<-mutate_if(x, cols=c(13:15),is.character,as.numeric)  #Tricky step replicate first the example, and correct the index according you selection
+    x<-x[,c(1:13,19,25)]  
+    x<-mutate_if(x, cols=c(13:15),is.character,as.numeric) 
     x<-unnest(x[,13:15])  #Unnesting converted (char2num) cols
     
     #Sticker
-    y<-y[,c(1:13,19,25,49)]  #Tricky step replicate first the example, and correct the index according you selection
+    y<-y[,c(1:13,19,25,49)]  
     y$variables<-rep(c("GOVTRANSFER","RENTER","CROWDHOME", "BUILT1960","REPAIRHOME", #Change the name of variables according you selection
                        "SHLTCOSTR","MEDHOMVAL","RECENTIMMIGRANT","VISMIN_NIE",
-                       "MOVERS","NONDEGREE","UNEMPLOYED","NILF","PUBTRANSIT"), nrow(x)/14)#Change '14' for the number of variables that you chose
+                       "MOVERS","NONDEGREE","UNEMPLOYED","NILF","PUBTRANSIT"), nrow(x)/nrow(index))#Change '14' for the number of variables that you chose
     
     x<-data.frame(y[,c(2:6,16,17)],x) #Adding var to converted
     
@@ -354,12 +352,12 @@ verifier <- function(x){
   datascape_rates <-  function(x){
     #Slice
     y <- x
-    x<-x[,c(1:12,31,37,43)] #Tricky step replicate first the example, and correct the index according you selection
+    x<-x[,c(1:12,31,37,43)] 
     x<-mutate_if(x, cols=c(13:15),is.character,as.numeric)
     x<-unnest(x[,13:15])  #Unnesting converted (char2num) cols
     
     #Sticker
-    y<-y[,c(1:12,31,37,43,49)] #Tricky step replicate first the example, and correct the index according you selection
+    y<-y[,c(1:12,31,37,43,49)]
     y$variables<-rep(c("GOVTRANSFER","RENTER","CROWDHOME", "BUILT1960","REPAIRHOME", #Change the name of variables according you selection
                        "SHLTCOSTR","MEDHOMVAL","RECENTIMMIGRANT","VISMIN_NIE", 
                        "MOVERS","NONDEGREE","UNEMPLOYED","NILF","PUBTRANSIT"), nrow(x)/14) #Change '14' for the number of variables that you chose 
